@@ -7,7 +7,7 @@
 #define MAX_LINE_LENGTH 204800
 #define MAX_STUDENTS 10
 #define MAX_COLUMNS 190
-#define TAM_INSCRICAO 12
+#define TAM_INSCRICAO 13
 
 typedef struct {
     char inscricao[TAM_INSCRICAO];
@@ -71,8 +71,49 @@ int obterNomesDasColunas(FILE *file, const char *nomesColunas[]) {
         token = strtok(NULL, ",");
     }
 
+    // Imprimir nomes das colunas e seus índices
+    for (int i = 0; i < numColunas; i++) {
+        printf("Coluna %d: %s\n", i, nomesColunas[i]);
+    }
+
     return numColunas;
 }
+
+void preencherCamposVaziosComZero(char *linha) {
+    char *delim = ",";
+    char novaLinha[strlen(linha) * 2];  // Uma estimativa segura do tamanho necessário
+    char *ptr_original = linha;
+    char *ptr_novaLinha = novaLinha;
+
+    // Inicializa a nova linha como uma string vazia
+    novaLinha[0] = '\0';
+
+    // Flag para verificar se o último caractere foi uma vírgula
+    int ultimaVirgula = 0;
+
+    // Processa cada caractere da linha original
+    while (*ptr_original != '\0') {
+        if (*ptr_original == ',') {
+            if (ultimaVirgula) {
+                // Adiciona zero apenas se a vírgula for precedida por outra vírgula
+                strcat(ptr_novaLinha, "0");
+            }
+            strcat(ptr_novaLinha, delim);
+            ultimaVirgula = 1;
+        } else {
+            // Copia o caractere normalmente
+            strncat(ptr_novaLinha, ptr_original, 1);
+            ultimaVirgula = 0;
+        }
+
+        ptr_original++;
+        ptr_novaLinha++;
+    }
+
+    // Copia a nova linha de volta para a linha original
+    strcpy(linha, novaLinha);
+}
+
 
 int lerBaseDeDados(Student *students, const char *filename, int n, const char *nomesColunas[]) {
     FILE *file = fopen(filename, "r");
@@ -89,6 +130,7 @@ int lerBaseDeDados(Student *students, const char *filename, int n, const char *n
     int indiceNotaLC = obterIndiceDaColuna("NU_NOTA_LC", nomesColunas, numColunas);
     int indiceNotaMT = obterIndiceDaColuna("NU_NOTA_MT", nomesColunas, numColunas);
     int indiceNotaRED = obterIndiceDaColuna("NU_NOTA_REDACAO", nomesColunas, numColunas);
+    printf("indice Nota CN: %d", indiceNotaCN);
 
     int linha_atual = 0;
     char linha[MAX_LINE_LENGTH];
@@ -96,51 +138,56 @@ int lerBaseDeDados(Student *students, const char *filename, int n, const char *n
     // Ignorar a primeira linha (cabeçalho)
     fgets(linha, MAX_LINE_LENGTH, file);
 
-     while (fgets(linha, MAX_LINE_LENGTH, file) != NULL && linha_atual < n) {
+    while (fgets(linha, MAX_LINE_LENGTH, file) != NULL && linha_atual < n) {
 
-
-
-        for (*ptr = linha; *ptr != '\0'; ++ptr) {
-            if (*ptr == ',' && *(ptr + 1) == ',') {
-                *ptr = ',';
-                memmove(ptr + 1, ptr + 2, strlen(ptr + 2) + 1);
-        char *ptr = linha;
-                *(ptr + 1) = ' ';
-            }
-        }
-
-        char *token = strtok(ptr, ",");
+        printf("\n\n LINHA ANTES: %s\n\n", linha);
+        preencherCamposVaziosComZero(linha);
+        printf("\n\n LINHA DEPOIS: %s\n\n", linha);
+        char *token = strtok(linha, ",");
         int coluna_atual = 0;
 
         while (token != NULL && (coluna_atual < numColunas)) {
-            printf("\nColuna atual: %d", coluna_atual);
+            float aux_nota_CN = 0;
+            float aux_nota_CH = 0;
+            float aux_nota_LC = 0;
+            float aux_nota_MT = 0;
+            float aux_nota_RED = 0;
+            //char aux_insc[12];
+            //printf("\nColuna atual: %d", coluna_atual);
+
             if (coluna_atual == indiceNotaCN) {
                 printf("\nCN: %s", token);
-                students[linha_atual].nota_CN = atof(token);
+                aux_nota_CN = atof(token);
+                students[linha_atual].nota_CN = aux_nota_CN;
             } else if (coluna_atual == indiceNotaCH) {
-                students[linha_atual].nota_CH = atof(token);
+                aux_nota_CH = atof(token);
+                students[linha_atual].nota_CH = aux_nota_CH;
                 printf("\nCH: %s", token);
             } else if (coluna_atual == indiceNotaLC) {
-                students[linha_atual].nota_LC = atof(token);
+                aux_nota_LC = atof(token);
+                students[linha_atual].nota_LC = aux_nota_LC;
                 printf("\nLC: %s", token);
             } else if (coluna_atual == indiceNotaMT) {
-                students[linha_atual].nota_MT = atof(token);
+                aux_nota_MT = atof(token);
+                students[linha_atual].nota_MT = aux_nota_MT;
                 printf("\nMT: %s", token);
             } else if (coluna_atual == indiceNotaRED) {
-                students[linha_atual].nota_RED = atof(token);
+                aux_nota_RED = atof(token);
+                students[linha_atual].nota_RED = aux_nota_RED;
                 printf("\nRED: %s", token);
             } else if (coluna_atual == indiceInscricao) {
                 printf("\nINSC: %s", token);
-                strncpy(students[linha_atual].inscricao, token, TAM_INSCRICAO - 1);
-                students[linha_atual].inscricao[TAM_INSCRICAO - 1] = '\0';
+                strncpy(students[linha_atual].inscricao, token, TAM_INSCRICAO-1);
+                students[linha_atual].inscricao[TAM_INSCRICAO-1] = '\0';
             }
 
             token = strtok(NULL, ",");
             coluna_atual++;
         }
 
-        printf("\n%s", students[linha_atual].inscricao);
-        printf("\n%d", linha_atual);
+        printf("\nNUMERO INSCRICAO ARMAZENADO: %s", students[linha_atual].inscricao);
+        printf("\nLINHA ATUAL: %d\n\n", linha_atual);
+
         linha_atual++;
     }
 
@@ -159,7 +206,7 @@ void liberarNomesColunas(const char *nomesColunas[], int numColunas) {
 int main() {
     srand(time(NULL));
 
-    const char *filename = "archive/microdados_enem_2016_coma.csv";
+    const char *filename = "enem_data/microdados_enem_2016_coma.csv";
 
     const char *nomesColunas[MAX_COLUMNS];
     int numColunas = 0;
@@ -172,9 +219,7 @@ int main() {
 // Imprimir as notas_CN dos estudantes
     for (int i = 0; i < numEstudantes; i++) {
         printf("Estudante %s - Nota CN: %.2f\n", students[i].inscricao, students[i].nota_CN);
-    }
-
-
+   }
 
     liberarNomesColunas(nomesColunas, numColunas);
 
